@@ -1,0 +1,14 @@
+# Bỏ qua dữ liệu thô và mô hình dung lượng lớn
+dataset/
+model/
+output/
+*.csv
+
+# Bỏ qua các file môi trường Python và cache
+__pycache__/
+*.pyc
+.env
+venv/
+.venv/
+.idea/
+.vscode/

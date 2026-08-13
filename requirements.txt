@@ -1,0 +1,19 @@
+# --- Core Big Data & ML Frameworks ---
+pyspark>=3.5.0,<3.6.0
+numpy>=1.24.0,<2.0.0
+pandas>=2.0.0
+
+# --- Caching & Data Storage ---
+redis>=5.0.0
+
+# --- Streaming Message Queue ---
+kafka-python-ng>=2.2.0
+
+# --- Web Backend & API ---
+Flask>=3.0.0
+Flask-Cors>=4.0.0
+
+# --- Utilities & Progress Visuals ---
+python-dotenv>=1.0.0
+tqdm>=4.66.0
+requests>=2.31.0

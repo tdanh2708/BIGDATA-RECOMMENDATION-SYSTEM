@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Recommendation System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+    <h1>🎬 Hệ Thống Gợi Ý Phim (ALS + Redis)</h1>
+    
+    <div class="search-box">
+        <!-- Thêm sự kiện bắt phím Enter -->
+        <input type="number" id="userId" placeholder="Nhập User ID (vd: 5, 123)..." onkeypress="handleKeyPress(event)" />
+        <button onclick="getRecommendations()">Recommend</button>
+    </div>
+
+    <div id="result"></div>
+</div>
+
+<script>
+
+function handleKeyPress(event) {
+    if (event.key === "Enter") {
+        getRecommendations();
+    }
+}
+
+async function getRecommendations() {
+    const userId = document.getElementById('userId').value;
+    if (!userId) {
+        alert("Vui lòng nhập User ID!");
+        return;
+    }
+
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = "<p class='loading'>⏳ Đang tính toán gợi ý...</p>";
+
+    try {
+        const response = await fetch(`/recommend/${userId}`);
+        const data = await response.json();
+
+        if (data.recommendations && data.recommendations.length > 0) {
+            const badgeClass = data.source === 'redis-cache' ? 'source-redis' : 'source-spark';
+            const sourceText = data.source === 'redis-cache' ? 'Redis Cache (Fast)' : 'Spark ALS Model';
+            
+            let html = `<div class="source-badge ${badgeClass}">${sourceText}</div>`;
+            html += '<ul class="movie-list">';
+            
+            data.recommendations.forEach(item => {
+                // Tách chuỗi dữ liệu ra các thành phần để hiển thị đẹp hơn
+                // Định dạng gốc: "Tên phim (ID: xxx) - Rating dự đoán: yyy"
+                const parts = item.split(" - Rating dự đoán: ");
+                const titleAndId = parts[0];
+                const rating = parts[1] || "";
+
+                const idMatch = titleAndId.match(/\(ID:\s*(\d+)\)/);
+                const movieId = idMatch ? idMatch[1] : "";
+                const title = titleAndId.replace(/\(ID:\s*\d+\)/, "").trim();
+
+                html += `
+                    <li class="movie-item">
+                        <div class="movie-title">${title}</div>
+                        <div class="movie-meta">
+                            <span class="badge-id">ID: ${movieId}</span>
+                            <span class="badge-score">⭐ ${rating}</span>
+                        </div>
+                    </li>
+                `;
+            });
+            html += '</ul>';
+            
+            resultDiv.innerHTML = html;
+        } else {
+            resultDiv.innerHTML = "<p class='empty'>Không tìm thấy dữ liệu gợi ý cho User này.</p>";
+        }
+    } catch (error) {
+        resultDiv.innerHTML = "<p class='error'>❌ Có lỗi xảy ra khi gọi API!</p>";
+    }
+}
+</script>
+
+</body>
+</html>
