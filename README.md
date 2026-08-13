@@ -1,102 +1,220 @@
-# Big Data Movie Recommendation System (PySpark ALS + Flask + Redis)
+# Big Data Movie Recommendation System
 
-## Yêu cầu hệ thống (Prerequisites)
+**PySpark ALS + Collaborative Filtering + Flask + Redis + Docker**
 
-Trước khi khởi chạy dự án, máy tính cần cài đặt sẵn:
-1. **Python 3.9+**
-2. **Docker Desktop** (Đã mở và đang chạy background)
-3. **Java OpenJDK 8 hoặc 11** (Để hỗ trợ môi trường PySpark local)
+Hệ thống gợi ý phim sử dụng thuật toán **ALS (Alternating Least Squares)** trên Apache Spark, kết hợp Flask API và Redis Cache để cung cấp kết quả đề xuất phim.
 
-I. Kiến trúc hệ thống (System Architecture)
-┌─────────────────────────────────────────────────────────┐
-│                      Caching Layer                      │
-│               (Redis - Tối ưu hiệu năng)                │
-└─────────────────────────────────────────────────────────┘
-                            ▲
-┌─────────────────────────────────────────────────────────┐
-│                    Application Layer                    │
-│          (Flask API + Frontend Glassmorphism)           │
-└─────────────────────────────────────────────────────────┘
-                            ▲
-┌─────────────────────────────────────────────────────────┐
-│                   Big Data & ML Layer                   │
-│      (Apache Spark ALS - Collaborative Filtering)       │
-└─────────────────────────────────────────────────────────┘
-                            ▲
-┌─────────────────────────────────────────────────────────┐
-│                      Data Layer                         │
-│          (MovieLens 20M Dataset - Raw Data)             │
-└─────────────────────────────────────────────────────────┘
+## 1. Công nghệ sử dụng
 
-II. Cấu trúc thư mục dự án
+| Công nghệ              | Mục đích                           |
+| ---------------------- | ---------------------------------- |
+| Python                 | Ngôn ngữ lập trình                 |
+| PySpark / Apache Spark | Xử lý Big Data và Machine Learning |
+| ALS                    | Collaborative Filtering            |
+| Flask                  | Backend và REST API                |
+| Redis                  | Cache kết quả recommendation       |
+| Docker                 | Quản lý môi trường chạy            |
+| MovieLens 20M          | Dataset                            |
+
+## 2. Kiến trúc hệ thống
+
+```text
+MovieLens 20M
+      |
+      v
+PySpark Preprocessing
+      |
+      v
+Apache Spark ALS
+      |
+      v
+Recommendation Model
+      |
+      v
+Flask API <----> Redis Cache
+      |
+      v
+Web Interface
+```
+
+## 3. Cấu trúc thư mục
+
+```text
 BIGDATA-RECOMMENDATION-SYSTEM/
-├── dataset/             # Dữ liệu đầu vào MovieLens (ml-20m)
-│   └── ml-20m/          # ratings.csv, movies.csv, tags.csv, ...
-├── docker/              # Cấu hình Docker Compose (Spark, Kafka, Redis)
+├── dataset/
+│   └── ml-20m/
+├── docker/
 │   └── docker-compose.yml
-├── evaluation/          # Kết quả đánh giá mô hình
+├── evaluation/
 │   └── rmse_result.txt
-├── flask/               # Code Web Application & API
-│   ├── static/          # File tĩnh (style.css, background image)
-│   ├── templates/       # Giao diện HTML (index.html)
-│   └── app.py           # Flask Server chính kết nối Spark & Redis
-├── model/               # Lưu mô hình Spark ALS đã huấn luyện
-│   └── als_model/       # itemFactors, userFactors, metadata
-├── notebooks/           # Code thử nghiệm / ETL subset
-├── output/              # Dữ liệu đầu ra & Metrics
+├── flask/
+│   ├── static/
+│   ├── templates/
+│   └── app.py
+├── model/
+│   └── als_model/
+├── notebooks/
+├── output/
 │   ├── batch_recommendations/
 │   └── metrics.json
-├── results/             # Kết quả tinh chỉnh tham số (Hyperparameter Tuning)
+├── results/
 │   └── tuning_result.csv
-├── screenshots/         # Ảnh minh chứng chạy hệ thống
-├── spark/               # Các script xử lý PySpark
-│   ├── evaluation.py    # Đánh giá độ chính xác (RMSE)
-│   ├── export_output.py # Script xuất dữ liệu gợi ý & metrics ra file
-│   ├── preprocessing.py # Tiền xử lý dữ liệu
-│   ├── recommend.py     # Script test dự đoán trực tiếp
-│   └── train_als.py     # Huấn luyện mô hình ALS
-├── README.md            # Tài liệu hướng dẫn dự án
-└── requirements.txt     # Danh sách các thư viện Python cần cài đặt
+├── screenshots/
+├── spark/
+│   ├── preprocessing.py
+│   ├── train_als.py
+│   ├── evaluation.py
+│   ├── recommend.py
+│   └── export_output.py
+├── README.md
+└── requirements.txt
+```
 
-III. Hướng dẫn cài đặt & Khởi chạy (Quick Start)
+## 4. Yêu cầu hệ thống
 
-Bước 1: Khởi tạo hạ tầng Docker Container
-Khởi chạy đồng thời 3 container Spark Master, Apache Kafka và Redis Cache:
-                    
-                    docker-compose up -d
+* Python 3.9+
+* Java OpenJDK 8 hoặc 11
+* Docker Desktop
+* Git
 
-Bước 2: Cài đặt thư viện Python
-                  
-                    pip install -r requirements.txt
+Kiểm tra phiên bản:
 
-Bước 3: Tiền xử lý dữ liệu (ETL / Preprocessing)
-Đọc và làm sạch 20 triệu lượt đánh giá từ tập dữ liệu MovieLens:
-                   
-                    python spark/preprocessing.py
+```bash
+python --version
+java -version
+docker --version
+docker compose version
+```
 
-Bước 4: Huấn luyện mô hình ALS
-Phân rã ma trận người dùng - bộ phim và lưu trained model vào thư mục model/:
-                    
-                    python spark/train_als.py
+## 5. Cài đặt
 
-Bước 5: Đánh giá độ chính xác mô hình (RMSE)
-                   
-                    python spark/evaluation.py
+Clone repository:
 
-Bước 6: Kiểm tra gợi ý trên Terminal
-Chạy thử tính toán gợi ý trực tiếp cho một user_id bất kỳ (ví dụ: User 1):
-                  
-                    python spark/recommend.py --user_id 1
+```bash
+git clone https://github.com/YOUR_USERNAME/BIGDATA-RECOMMENDATION-SYSTEM.git
+cd BIGDATA-RECOMMENDATION-SYSTEM
+```
 
-Bước 7: Khởi chạy Web Backend (Flask API)
-                    
-                    python flask/app.py
+Cài đặt thư viện:
 
-TRUY CẬP GIAO DIỆN WEB TẠI: http://127.0.0.1:5000/
+```bash
+pip install -r requirements.txt
+```
 
-IV. Cơ chế vận hành Đề xuất (Recommendation Workflow)
-Lần truy vấn đầu tiên (First Request): Khi nhận user_id mới từ phía Web, Web Server gọi trực tiếp Mô hình Spark ALS để tính toán ma trận gợi ý theo thời gian thực.
+## 6. Khởi chạy
 
-Caching: Kết quả tính toán sẽ được tự động lưu vết vào Redis Cache.
+### Bước 1: Khởi động Docker
 
-Các lần truy vấn tiếp theo (Subsequent Requests): Flask API sẽ ưu tiên lấy kết quả trực tiếp từ Redis Cache, giúp thời gian phản hồi giao diện đạt mức tiệm cận 0ms.
+```bash
+docker compose -f docker/docker-compose.yml up -d
+```
+
+Kiểm tra container:
+
+```bash
+docker ps
+```
+
+### Bước 2: Tiền xử lý dữ liệu
+
+```bash
+python spark/preprocessing.py
+```
+
+### Bước 3: Huấn luyện mô hình ALS
+
+```bash
+python spark/train_als.py
+```
+
+### Bước 4: Đánh giá mô hình
+
+```bash
+python spark/evaluation.py
+```
+
+### Bước 5: Kiểm tra recommendation
+
+```bash
+python spark/recommend.py --user_id 1
+```
+
+### Bước 6: Khởi chạy Flask
+
+```bash
+python flask/app.py
+```
+
+Truy cập:
+
+```text
+http://127.0.0.1:5000/
+```
+
+## 7. Recommendation Workflow
+
+```text
+User
+ |
+ v
+Flask API
+ |
+ v
+Redis Cache
+ |
+ +-- Cache HIT --> Return recommendations
+ |
+ +-- Cache MISS
+        |
+        v
+    Spark ALS
+        |
+        v
+ Recommendations
+        |
+        v
+    Redis Cache
+```
+
+Request đầu tiên sẽ sử dụng Spark ALS để tính recommendation và lưu kết quả vào Redis.
+
+Các request tiếp theo sẽ lấy kết quả trực tiếp từ Redis Cache để giảm thời gian phản hồi.
+
+## 8. Đánh giá mô hình
+
+Mô hình sử dụng **RMSE (Root Mean Square Error)** để đánh giá độ chính xác.
+
+Kết quả được lưu tại:
+
+```text
+evaluation/rmse_result.txt
+```
+
+Kết quả tuning tham số:
+
+```text
+results/tuning_result.csv
+```
+
+## 9. Output
+
+```text
+output/
+├── batch_recommendations/
+└── metrics.json
+```
+
+## 10. Dataset
+
+Dự án sử dụng **MovieLens 20M Dataset**, bao gồm dữ liệu về:
+
+* Movies
+* Users
+* Ratings
+* Tags
+
+## 11. Project
+
+**Big Data Movie Recommendation System**
+
+PySpark ALS + Collaborative Filtering + Flask + Redis + Docker
